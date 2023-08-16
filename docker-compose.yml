@@ -1,0 +1,44 @@
+version: '3.9'
+
+volumes:
+  static:
+  media:
+  pg_data:
+
+services:
+  db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+    env_file: .env
+
+  backend:
+    build: ./backend/
+    restart: always
+    volumes:
+      - static:/app/static/
+      - media:/app/media/
+    env_file: .env
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend/
+    volumes:
+      - ./frontend/:/app/result_build/
+    depends_on:
+      - backend
+
+  nginx:
+    build: ./infra/
+    restart: always
+    ports:
+      - 8000:80
+    volumes:
+      - ./frontend/build:/usr/share/nginx/html/
+      - ./docs/:/usr/share/nginx/html/api/docs/
+      - static:/var/html/static/
+      - media:/var/html/media/
+    depends_on:
+      - backend
