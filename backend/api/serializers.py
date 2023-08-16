@@ -253,7 +253,7 @@ class RecipeEditSerializer(ModelSerializer):
                     ingredient_id=ingredient.get('id'),
                     recipe=recipe,
                     amount=ingredient.get('amount'),)
-                ])
+            ])
 
     @transaction.atomic
     def create(self, validated_data):

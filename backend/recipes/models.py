@@ -142,7 +142,7 @@ class IngredientInRecipe(models.Model):
             f'{self.ingredient.name} {self.amount} '
             f'({self.ingredient.measurement_unit}) '
             f'в рецепте {self.recipe.name}.'
-            )
+        )
 
 
 class FavoriteRecipe(models.Model):
