@@ -221,43 +221,43 @@ class RecipeEditSerializer(ModelSerializer):
 
     def validate(self, data):
         name = data.get('name')
-        if len(name) < 4:
+        if len(name) < 4 or not name.isalpha():
             raise ValidationError({
-                'name': '4 символа - минимум для названия рецепта'})
-        if not name.isalpha():
-            raise ValidationError({
-                'name': 'В названии должна быть хотя бы одна буква'})
+                'name': 'Должно быть мин. 4 знака и мин. 1 буква.'
+            })
+
         ingredients = data.get('ingredients')
         if not ingredients or len(ingredients) == 0:
             raise ValidationError({
-                'ingredients': 'Укажите хотя бы один ингредиент'})
-        for ingredient in ingredients:
-            if not Ingredient.objects.filter(
-                    id=ingredient['id']).exists():
-                raise ValidationError({
-                    'ingredients': f'Ингредиента с id - {ingredient["id"]} нет'
-                })
-        ingredient_ids = [ingredient['id'] for ingredient in ingredients]
-        if len(ingredient_ids) != len(set(ingredient_ids)):
-            raise ValidationError({
-                'ingredients': 'Ингредиенты должны быть уникальными'})
-        tags = data.get('tags')
-        if not tags or len(tags) == 0:
-            raise ValidationError({
-                'tags': 'Укажите хотя бы один тег'})
-        if len(tags) != len(set([item for item in tags])):
-            raise ValidationError({
-                'tags': 'Тэг должен быть уникальным!'})
-        amounts = data.get('ingredients')
-        if [item for item in amounts if item['amount'] < 1]:
-            raise ValidationError({
-                'amount': 'Кольчество ингридиента не может быть меньше 1'
+                'ingredients': 'Укажите хотя бы один ингредиент'
             })
+
+        ing_ids = [ingredient['id'] for ingredient in ingredients]
+        if len(ing_ids) != len(set(ing_ids)) or not all(
+            Ingredient.objects.filter(id=id).exists() for id in ing_ids
+        ):
+            raise ValidationError({
+                'ingredients': 'Указаны некорректные ингредиенты'
+            })
+
+        tags = data.get('tags')
+        if not tags or len(tags) == 0 or len(tags) != len(set(tags)):
+            raise ValidationError({
+                'tags': 'Укажите хотя бы один уникальный тег'
+            })
+
+        amounts = data.get('ingredients')
+        if any(item['amount'] < 1 for item in amounts):
+            raise ValidationError({
+                'amount': 'Количество ингредиента не может быть меньше 1'
+            })
+
         cooking_time = data.get('cooking_time')
-        if cooking_time > 300 or cooking_time < 1:
+        if cooking_time < 1 or cooking_time > 300:
             raise ValidationError({
                 'cooking_time': 'Укажите время от 1 до 300 минут'
             })
+
         return data
 
     @transaction.atomic
