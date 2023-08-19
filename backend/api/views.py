@@ -1,5 +1,3 @@
-from django.db.models import Sum
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
@@ -18,8 +16,7 @@ from .permissions import IsAuthorOrReadOnly
 from .serializers import (IngredientSerializer, RecipeEditSerializer,
                           RecipeReadSerializer, SubscribeRecipeSerializer,
                           TagSerializer)
-
-# Create your views here.
+from .utils import download_cart
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):
@@ -96,28 +93,8 @@ class RecipeViewSet(ModelViewSet):
 
     @action(
         detail=False,
+        methods=('get',),
         permission_classes=[IsAuthenticated]
     )
     def download_shopping_cart(self, request):
-        user = request.user
-        if not user.shopping_cart.exists():
-            return Response(
-                'В корзине нет товаров', status=status.HTTP_400_BAD_REQUEST)
-
-        text = 'Список покупок:\n\n'
-        ingredient_name = 'recipe__recipe__ingredient__name'
-        ingredient_unit = 'recipe__recipe__ingredient__measurement_unit'
-        recipe_amount = 'recipe__recipe__amount'
-        amount_sum = 'recipe__recipe__amount__sum'
-        cart = user.shopping_cart.select_related('recipe').values(
-            ingredient_name, ingredient_unit).annotate(Sum(
-                recipe_amount)).order_by(ingredient_name)
-        for _ in cart:
-            text += (
-                f'{_[ingredient_name]} ({_[ingredient_unit]})'
-                f' — {_[amount_sum]}\n'
-            )
-        response = HttpResponse(text, content_type='text/plain')
-        filename = 'shopping_list.txt'
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-        return response
+        return download_cart(request)

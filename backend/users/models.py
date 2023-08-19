@@ -1,22 +1,28 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import UniqueConstraint
-
-# Create your models here.
+from django.db.models import CheckConstraint, F, Q, UniqueConstraint
 
 
 class User(AbstractUser):
+    username = models.CharField(
+        verbose_name='Логин',
+        max_length=settings.MAX_LEN,
+        unique=True,
+    )
     email = models.EmailField(
-        'email address',
-        max_length=254,
+        verbose_name='email address',
+        max_length=settings.MAX_LEN,
         unique=True,
     )
     first_name = models.CharField(
-        'Имя',
-        max_length=200)
+        verbose_name='Имя',
+        max_length=settings.MAX_LEN,
+    )
     last_name = models.CharField(
-        'Фамилия',
-        max_length=200)
+        verbose_name='Фамилия',
+        max_length=settings.MAX_LEN,
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = [
@@ -26,7 +32,7 @@ class User(AbstractUser):
     ]
 
     class Meta:
-        ordering = ('-id',)
+        ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
@@ -52,10 +58,16 @@ class Subscribe(models.Model):
         auto_now_add=True)
 
     class Meta:
-        ordering = ['-id']
+        ordering = ('-id',)
         constraints = [
             UniqueConstraint(fields=['user', 'author'],
-                             name='unique_subscription')
+                             name='unique_subscription'),
+            CheckConstraint(check=~Q(user=F('author')),
+                            name='no_self_subscription'),
         ]
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
+
+    def __str__(self):
+        return (f'Пользователь: {self.user.username},'
+                f' автор: {self.author.username}')

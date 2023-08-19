@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.db import transaction
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
@@ -11,9 +10,7 @@ from rest_framework.serializers import ModelSerializer
 
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientInRecipe,
                             Recipe, ShoppingCart, Tag)
-from users.models import Subscribe
-
-User = get_user_model()
+from users.models import Subscribe, User
 
 
 class UserCreateSerializer(UserCreateSerializer):
@@ -105,7 +102,11 @@ class SubscribeSerializer(UserListSerializer):
 class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = '__all__'
+        fields = (
+            'id',
+            'name',
+            'measurement_unit',
+        )
 
 
 class TagSerializer(ModelSerializer):
@@ -168,7 +169,7 @@ class RecipeReadSerializer(ModelSerializer):
         return (self.context.get('request').user.is_authenticated
                 and FavoriteRecipe.objects.filter(
                     user=self.context.get('request').user,
-                    favorite_recipe=obj
+                    recipe=obj
         ).exists())
 
     def get_is_in_shopping_cart(self, obj):
@@ -200,6 +201,10 @@ class RecipeEditSerializer(ModelSerializer):
     author = UserListSerializer(
         read_only=True
     )
+    cooking_time = IntegerField(
+        min_value=1,
+        max_value=300,
+    )
 
     class Meta:
         model = Recipe
@@ -219,17 +224,27 @@ class RecipeEditSerializer(ModelSerializer):
         if len(name) < 4:
             raise ValidationError({
                 'name': '4 символа - минимум для названия рецепта'})
+        if not name.isalpha():
+            raise ValidationError({
+                'name': 'В названии должна быть хотя бы одна буква'})
         ingredients = data.get('ingredients')
+        if not ingredients or len(ingredients) == 0:
+            raise ValidationError({
+                'ingredients': 'Укажите хотя бы один ингредиент'})
         for ingredient in ingredients:
             if not Ingredient.objects.filter(
                     id=ingredient['id']).exists():
                 raise ValidationError({
                     'ingredients': f'Ингредиента с id - {ingredient["id"]} нет'
                 })
-        if len(ingredients) != len(set([item['id'] for item in ingredients])):
-            raise ValidationError(
-                'Ингредиент должен быть уникальным!')
+        ingredient_ids = [ingredient['id'] for ingredient in ingredients]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            raise ValidationError({
+                'ingredients': 'Ингредиенты должны быть уникальными'})
         tags = data.get('tags')
+        if not tags or len(tags) == 0:
+            raise ValidationError({
+                'tags': 'Укажите хотя бы один тег'})
         if len(tags) != len(set([item for item in tags])):
             raise ValidationError({
                 'tags': 'Тэг должен быть уникальным!'})
@@ -266,15 +281,14 @@ class RecipeEditSerializer(ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        if 'ingredients' in validated_data:
-            ingredients = validated_data.pop('ingredients')
+        ingredients = validated_data.pop('ingredients', None)
+        tags = validated_data.pop('tags', None)
+        if ingredients:
             instance.ingredients.clear()
             self.create_ingredients_amounts(ingredients, instance)
-        if 'tags' in validated_data:
-            instance.tags.set(
-                validated_data.pop('tags'))
-        return super().update(
-            instance, validated_data)
+        if tags:
+            instance.tags.set(tags)
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         return RecipeReadSerializer(
