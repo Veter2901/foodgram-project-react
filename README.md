@@ -34,5 +34,8 @@ docker compose -f docker-compose.yml exec backend python manage.py collectstatic
 docker compose -f docker-compose.yml exec backend python manage.py load_tags
 docker compose -f docker-compose.yml exec backend python manage.py load_ingrs
 ```
+
+### Теперь доступность проекта можно проверить по адресу [http://localhost:8000/](http://localhost:8000/)
+
 ### Автор
 Дмитрий Уткин
