@@ -14,7 +14,7 @@ services:
     env_file: .env
 
   backend:
-    build: ./backend/
+    image: veter2901/foodgram_backend
     restart: always
     volumes:
       - static:/app/static/
@@ -24,14 +24,14 @@ services:
       - db
 
   frontend:
-    build: ./frontend/
+    image: veter2901/foodgram_frontend
     volumes:
       - ./frontend/:/app/result_build/
     depends_on:
       - backend
 
   nginx:
-    build: ./infra/
+    image: veter2901/foodgram_ngnix
     restart: always
     ports:
       - 8000:80
