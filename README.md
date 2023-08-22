@@ -32,6 +32,7 @@ SECRET_KEY              # секретный ключ приложения
 sudo docker compose -f docker-compose.production.yml up -d
 ```
  -  Последовательно выполните следующие команды:
+```
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py makemigrations 
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
