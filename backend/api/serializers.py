@@ -296,3 +296,61 @@ class RecipeEditSerializer(ModelSerializer):
             context={
                 'request': self.context.get('request')
             }).data
+
+class RecipeBriefSerializer(ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+class RecipeShortSerializer(ModelSerializer):
+    """Серилизатор полей избранных рецептов и покупок."""
+
+    class Meta:
+        fields = (
+            'name', 'text', 'cooking_time',
+            'image',
+        )
+        model = Recipe
+
+class FavoriteSerializer(ModelSerializer):
+    """Сериализатор для избранных рецептов."""
+
+    class Meta:
+        fields = (
+            'recipe', 'user'
+        )
+        model = FavoriteRecipe
+
+    def validate(self, data):
+        if FavoriteRecipe.objects.filter(user = data['user'], recipe=data['recipe']).exists():
+            raise ValidationError(
+                'Рецепт уже добавлен в избранное.'
+            )
+        return data
+
+    def to_representation(self, instance):
+        return RecipeShortSerializer(
+            instance.recipe,
+            context={'request': self.context.get('request')}
+        ).data
+    
+class ShopListSerializer(ModelSerializer):
+    """Сериализатор для списка покупок."""
+    class Meta:
+        fields = (
+            'recipe', 'user'
+        )
+        model = ShoppingCart
+
+    def validate(self, data):
+        if ShoppingCart.objects.filter(user = data['user'], recipe=data['recipe']).exists():
+            raise ValidationError(
+                'Рецепт уже добавлен в корзину'
+            )
+        return data
+
+    def to_representation(self, instance):
+        return RecipeShortSerializer(
+            instance.recipe,
+            context={'request': self.context.get('request')}
+        ).data

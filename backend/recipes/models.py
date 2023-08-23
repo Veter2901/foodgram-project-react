@@ -166,12 +166,14 @@ class CustomRecipeModel(models.Model):
 
 class FavoriteRecipe(CustomRecipeModel):
     class Meta:
+        default_related_name = 'favorites'
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
                 name='unique_favourite')]
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
+        
 
     def __str__(self):
         return f'{self.user} добавил "{self.recipe}" в Избранное'
@@ -179,6 +181,7 @@ class FavoriteRecipe(CustomRecipeModel):
 
 class ShoppingCart(CustomRecipeModel):
     class Meta:
+        default_related_name = 'shopping_list'
         verbose_name = 'Корзина покупок'
         verbose_name_plural = 'Корзина покупок'
         constraints = [
