@@ -9,9 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = True 
-
-#bool(distutils.util.strtobool(os.getenv('DEBUG', 'false')))
+DEBUG = bool(distutils.util.strtobool(os.getenv('DEBUG', 'false')))
 
 ALLOWED_HOSTS = ['*']
 
@@ -109,7 +107,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
@@ -117,6 +115,10 @@ REST_FRAMEWORK = {
 }
 
 DJOSER = {
+    'PERMISSIONS': {
+        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+        'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
+    },
     'HIDE_USERS': False,
     'LOGIN_FIELD': 'email',
 }

@@ -1,15 +1,14 @@
 from django.db import transaction
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
+from recipes.models import (FavoriteRecipe, Ingredient, IngredientInRecipe,
+                            Recipe, ShoppingCart, Tag)
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (IntegerField, ReadOnlyField,
                                    SerializerMethodField)
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
-
-from recipes.models import (FavoriteRecipe, Ingredient, IngredientInRecipe,
-                            Recipe, ShoppingCart, Tag)
 from users.models import Subscribe, User
 
 
@@ -64,11 +63,19 @@ class SubscribeSerializer(UserListSerializer):
     recipes_count = SerializerMethodField()
     recipes = SerializerMethodField()
 
-    class Meta(UserListSerializer.Meta):
-        fields = UserListSerializer.Meta.fields + (
-            'recipes_count', 'recipes'
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'recipes',
+            'recipes_count',
         )
-        read_only_fields = ('email', 'username')
+        read_only_fields = ('email', 'username',
+                            'first_name', 'last_name')
 
     def validate(self, data):
         author = self.instance
@@ -297,10 +304,12 @@ class RecipeEditSerializer(ModelSerializer):
                 'request': self.context.get('request')
             }).data
 
+
 class RecipeBriefSerializer(ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
+
 
 class RecipeShortSerializer(ModelSerializer):
     """Серилизатор полей избранных рецептов и покупок."""
@@ -312,6 +321,7 @@ class RecipeShortSerializer(ModelSerializer):
         )
         model = Recipe
 
+
 class FavoriteSerializer(ModelSerializer):
     """Сериализатор для избранных рецептов."""
 
@@ -322,7 +332,8 @@ class FavoriteSerializer(ModelSerializer):
         model = FavoriteRecipe
 
     def validate(self, data):
-        if FavoriteRecipe.objects.filter(user = data['user'], recipe=data['recipe']).exists():
+        if FavoriteRecipe.objects.filter(user=data['user'],
+                                         recipe=data['recipe']).exists():
             raise ValidationError(
                 'Рецепт уже добавлен в избранное.'
             )
@@ -333,7 +344,8 @@ class FavoriteSerializer(ModelSerializer):
             instance.recipe,
             context={'request': self.context.get('request')}
         ).data
-    
+
+
 class ShopListSerializer(ModelSerializer):
     """Сериализатор для списка покупок."""
     class Meta:
@@ -343,7 +355,8 @@ class ShopListSerializer(ModelSerializer):
         model = ShoppingCart
 
     def validate(self, data):
-        if ShoppingCart.objects.filter(user = data['user'], recipe=data['recipe']).exists():
+        if ShoppingCart.objects.filter(user=data['user'],
+                                       recipe=data['recipe']).exists():
             raise ValidationError(
                 'Рецепт уже добавлен в корзину'
             )
